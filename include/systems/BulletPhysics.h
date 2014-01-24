@@ -3,9 +3,10 @@
 #include "IFactory.h"
 #include "ISystem.h"
 #include "bullet/btBulletDynamicsCommon.h"
-#include "IMoverComponent.h"
 #include "IBulletShape.h"
-#include "components/BulletMover.h"
+#include "components/PhysicsController.h"
+#include "Sigma.h"
+#include "components/BulletShapeCapsule.h"
 
 class Property;
 class IMoverComponent;
@@ -15,14 +16,14 @@ namespace Sigma {
 	class BulletPhysics
 		: public Sigma::IFactory, public Sigma::ISystem<IBulletShape> {
 	public:
-		BulletPhysics() : mover(1) { }
-		~BulletPhysics();
+		DLL_EXPORT BulletPhysics();
+		DLL_EXPORT ~BulletPhysics();
 		/**
 		 * \brief Starts the Simple Physics system.
 		 *
 		 * \return bool Returns false on startup failure.
 		 */
-		bool Start();
+		DLL_EXPORT bool Start();
 
 		/**
 		 * \brief Causes an update in the system based on the change in time.
@@ -31,17 +32,16 @@ namespace Sigma {
 		 * \param[in] const float delta The change in time since the last update
 		 * \return bool Returns true if we had an update interval passed.
 		 */
-		bool Update(const double delta);
+		DLL_EXPORT bool Update(const double delta);
 
-		IComponent* createBulletShapeMesh(const unsigned int entityID, const std::vector<Property> &properties);
-		IComponent* createBulletShapeSphere(const unsigned int entityID, const std::vector<Property> &properties);
+		DLL_EXPORT IComponent* createBulletShapeMesh(const id_t entityID, const std::vector<Property> &properties);
+		DLL_EXPORT IComponent* createBulletShapeSphere(const id_t entityID, const std::vector<Property> &properties);
 
 		std::map<std::string,FactoryFunction> getFactoryFunctions();
 
-		void initViewMover();
-
-		BulletMover* getViewMover() {
-			return &this->mover;
+		DLL_EXPORT void initViewMover(GLTransform& t);
+		PhysicsController* getViewMover() {
+			return this->mover;
 		}
 	private:
 		btBroadphaseInterface* broadphase;
@@ -49,6 +49,7 @@ namespace Sigma {
 		btCollisionDispatcher* dispatcher;
 		btSequentialImpulseConstraintSolver* solver;
 		btDiscreteDynamicsWorld* dynamicsWorld;
-		BulletMover mover;
+		PhysicsController* mover;
+		BulletShapeCapsule* moverSphere;
 	};
 }

@@ -13,22 +13,36 @@ Contributing
 ===
 The easiest way to contribute is to fork and experiment. To better understand the organization please refer to [this drawing](https://docs.google.com/drawings/d/1HFFiz1oJc3A8gyO-fMADAfW8PTWjCqhe5silYDXM1lo/edit).
 
-Coding standards and practices can be found [here](https://docs.google.com/document/d/1dN3cNUdn0HKb7lZXcBCIL2Tm216hQAQxbZnEuCpiYtc/edit).
+Coding standards and practices can be found [here](https://github.com/adam4813/Sigma/wiki/Coding-Standards).
 
 Installing
 ===
 Sigma requires the following dependencies:
-* [GLEW](http://glew.sourceforge.net) 1.5.2 or newer;
+* [GLEW](http://glew.sourceforge.net) 1.5.2 or newer, not required on OS X;
 * [GLFW](http://www.glfw.org) 3.0.0 or newer;
 * [GLM](http://glm.g-truc.net);
 * [SOIL](http://www.lonesock.net/soil.html);
 * [Bullet](http://www.bulletphysics.org);
-* [Awesomium](http://www.awesomium.com);
+* [Chromium Embedded Framework](http://code.google.com/p/chromiumembedded) 3;
 * An OpenAL API implementation;
 * [libogg](https://www.xiph.org/ogg/);
 * [libvorbis](https://www.xiph.org/ogg/);
 
-You'll also need a [package of assets](https://www.dropbox.com/s/8gtm4bj0g9yjo54/assets12-27.zip).  Unpack it in the build/bin/ directory.
+Sigma on Linux also requires [GTK+ 2](http://www.gtk.org), due to usage of Chromium Embedded Framework.
+
+You'll also need a [package of assets](http://wiki.trillek.org/wiki/Assets).  Unpack it in the build/bin/ directory.
+
+## Setting up Chromium Embedded Framework ###
+Make sure you use a binary release from [Adobe](http://www.cefbuilds.com). **Use the latest version that is NOT marked as dev (trunk).**
+
+1. Unzip the downloaded tarball.
+2. This step depends on your platform. On Windows, build the included `libcef_dll_wrapper.vcxproj` project. On Linux, run `make libcef_dll_wrapper BUILDTYPE=Release`. On OS X, use the `cefclient.xcodeproj` Xcode project. **Make sure to use the Release build mode.**
+3. Copy `out/Release/obj.target/libcef_dll_wrapper` directory, if any, and the contents of `Resources/` directories into Sigma's build/bin/.
+4. Copy the contents of include/ directory into Sigma's include/.
+5. Copy `out/Release/obj.target/libcef_dll_wrapper.a` (or .lib) to a `cef/` directory in the Sigma root (create the `cef/` directory if it does not exist)
+6. This step also depends on your platform. On Windows copy all the .dll files in `Release/` to Sigma's build/bin/, then copy the .lib file into Sigma's `cef/` directory. On Linux or OS X copy the entire contents of `Release/` into Sigma's build/bin/.
+7. On Linux and OSX, make a symlink pointing to libcef.so (or .dylib) in the `cef/` directory.
+8. If you get the error "malformed archive" when building, make a symlink pointing to libcef_dll_wrapper directory in the `cef/` directory.
 
 ## Building ##
 

@@ -6,19 +6,37 @@
 #include "systems/FactorySystem.h"
 #include "controllers/GUIController.h"
 #include "controllers/FPSCamera.h"
-#include "components/BulletMover.h"
+#include "components/PhysicsController.h"
 #include "components/GLScreenQuad.h"
 #include "SCParser.h"
 #include "systems/WebGUISystem.h"
 #include "OS.h"
 #include "components/SpotLight.h"
 
+#ifdef _WIN32
+#include <windows.h>
+#endif
+
 int main(int argCount, char **argValues) {
+	Sigma::WebGUISystem webguisys;
+
+	CefRefPtr<Sigma::WebGUISystem> app(&webguisys);
+#ifdef _WIN32
+	CefMainArgs mainArgs(GetModuleHandle(NULL));
+	int exitCode = CefExecuteProcess(mainArgs, app.get(), nullptr);
+#else
+	CefMainArgs mainArgs(argCount, argValues);
+	int exitCode = CefExecuteProcess(mainArgs, app.get());
+#endif
+
+	if (exitCode >= 0) {
+		return exitCode;
+	}
+
 	Sigma::OS glfwos;
 	Sigma::OpenGLSystem glsys;
 	Sigma::OpenALSystem alsys;
 	Sigma::BulletPhysics bphys;
-	Sigma::WebGUISystem webguisys;
 
 	Sigma::FactorySystem& factory = Sigma::FactorySystem::getInstance();
 	factory.register_Factory(glsys);
@@ -69,7 +87,7 @@ int main(int argCount, char **argValues) {
 	// Setup GUI //
 	///////////////
 
-	webguisys.Start();
+	webguisys.Start(mainArgs);
 	webguisys.SetWindowSize(glfwos.GetWindowWidth(), glfwos.GetWindowHeight());
 
 	/////////////////
@@ -101,7 +119,7 @@ int main(int argCount, char **argValues) {
 
 			// Currently, physicsmover components must come after gl* components
 			if((*itr).type == "PhysicsMover") {
-				GLTransform *transform = glsys.GetTransformFor(e->id);
+				Sigma::GLTransform *transform = glsys.GetTransformFor(e->id);
 				if(transform) {
 					Property p("transform", transform);
 					itr->properties.push_back(p);
@@ -136,27 +154,31 @@ int main(int argCount, char **argValues) {
 		props.push_back(p_y);
 		props.push_back(p_z);
 
-		glsys.createGLView(1, props, "FPSCamera");
+		glsys.createGLView(1, props);
 	}
-
-	// Still hard coded to use entity ID #1
-	// Link the graphics view to the physics system's view mover
-	Sigma::BulletMover* mover = bphys.getViewMover();
 
 	//Create the controller
 	//Perhaps a little awkward currently, should create a generic
 	//controller class ancestor
-	if(glsys.GetViewMode() == "FPSCamera") {
-		using Sigma::event::handler::FPSCamera;
-		FPSCamera* theCamera = static_cast<FPSCamera*>(glsys.GetView());
-		glfwos.RegisterKeyboardEventHandler(theCamera);
-		glfwos.RegisterMouseEventHandler(theCamera);
-		theCamera->os = &glfwos;
-		theCamera->SetMover(mover);
-	}
+	bphys.initViewMover(*glsys.GetView()->Transform());
+
+	Sigma::event::handler::FPSCamera theCamera(*bphys.getViewMover());
+	glsys.GetView()->Transform()->SetEuler(true);
+	glsys.GetView()->Transform()->SetMaxRotation(glm::vec3(45.0f,0,0));
+	glfwos.RegisterKeyboardEventHandler(&theCamera);
+	glfwos.RegisterMouseEventHandler(&theCamera);
+	theCamera.os = &glfwos;
 	
 	// Sync bullet physics object with gl camera
-	bphys.initViewMover();
+
+	///////////////////
+	// Configure GUI //
+	///////////////////
+
+	Sigma::event::handler::GUIController guicon;
+	guicon.SetGUI(webguisys.getComponent(100, Sigma::WebGUIView::getStaticComponentTypeName()));
+	glfwos.RegisterKeyboardEventHandler(&guicon);
+	glfwos.RegisterMouseEventHandler(&guicon);
 	
 	// Call now to clear the delta after startup.
 	glfwos.GetDeltaTime();
@@ -225,5 +247,6 @@ int main(int argCount, char **argValues) {
 		glfwos.OSMessageLoop();
 	}
 
+	CefShutdown();
 	return 0;
 }

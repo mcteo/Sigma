@@ -4,7 +4,12 @@
 #include "components/BulletShapeSphere.h"
 
 namespace Sigma {
+	// We need ctor and dstor to be exported to a dll even if they don't do anything
+	BulletPhysics::BulletPhysics() {}
 	BulletPhysics::~BulletPhysics() {
+		if (this->mover != nullptr) {
+			delete this->mover;
+		}
 		if (this->dynamicsWorld != nullptr) {
 			delete this->dynamicsWorld;
 		}
@@ -33,9 +38,18 @@ namespace Sigma {
 		return true;
 	}
 
-	void BulletPhysics::initViewMover() {
-		this->mover.InitializeRigidBody();
-		this->dynamicsWorld->addRigidBody(this->mover.GetRigidBody());
+	void BulletPhysics::initViewMover(GLTransform& t) {
+		this->moverSphere = new BulletShapeCapsule(1);
+		this->moverSphere->SetCapsuleSize(0.3f, 1.3f);
+		this->moverSphere->InitializeRigidBody(
+			t.GetPosition().x,
+			t.GetPosition().y,
+			t.GetPosition().z,
+			t.GetPitch(),
+			t.GetYaw(),
+			t.GetRoll());
+		this->mover = new PhysicsController(*moverSphere, t);
+		this->dynamicsWorld->addRigidBody(this->moverSphere->GetRigidBody());
 	}
 
 	std::map<std::string,Sigma::IFactory::FactoryFunction>
@@ -48,7 +62,7 @@ namespace Sigma {
 		return retval;
 	}
 
-	IComponent* BulletPhysics::createBulletShapeMesh(const unsigned int entityID, const std::vector<Property> &properties) {
+	IComponent* BulletPhysics::createBulletShapeMesh(const id_t entityID, const std::vector<Property> &properties) {
 		BulletShapeMesh* mesh = new BulletShapeMesh(entityID);
 
 		float scale = 1.0f;
@@ -99,7 +113,7 @@ namespace Sigma {
 		return mesh;
 	}
 
-	IComponent* BulletPhysics::createBulletShapeSphere(const unsigned int entityID, const std::vector<Property> &properties) {
+	IComponent* BulletPhysics::createBulletShapeSphere(const id_t entityID, const std::vector<Property> &properties) {
 		BulletShapeSphere* sphere = new BulletShapeSphere(entityID);
 
 		float scale = 1.0f;
@@ -146,11 +160,11 @@ namespace Sigma {
 	}
 
 	bool BulletPhysics::Update(const double delta) {
-		this->mover.ApplyForces(delta);
+		this->mover->UpdateForces(delta);
 
 		dynamicsWorld->stepSimulation(delta, 10);
 
-		this->mover.UpdateTransform();
+		this->mover->UpdateTransform();
 
 		return true;
 	}

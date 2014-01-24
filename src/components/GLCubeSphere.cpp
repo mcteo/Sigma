@@ -3,6 +3,7 @@
 #include "SOIL/SOIL.h"
 
 #include <vector>
+#include <iostream>
 #include <sstream>
 
 const float epsilon = 0.0001f;
@@ -13,7 +14,7 @@ namespace Sigma {
 																	 (abs(rhs.y - lhs.y) < epsilon) &&
 																	 (abs(rhs.z - lhs.z) < epsilon)); }
 
-    GLCubeSphere::GLCubeSphere( const int entityID ) : GLMesh(entityID) {
+    GLCubeSphere::GLCubeSphere( const id_t entityID ) : GLMesh(entityID) {
         // initialization handled by GLMesh or InitializeBuffers
     }
 
